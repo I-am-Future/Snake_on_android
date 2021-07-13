@@ -36,68 +36,99 @@ class _MyHomePageState extends State<MyHomePage> {
   final updateInterval = Duration(milliseconds: 1500);
   late int monsterBlockX;
   late int monsterBlockY;
+  late int monsterDrift;
   late int snakeBlockX;
   late int snakeBlockY;
   final snakeSize = 20;
   var gameLoopTimer;
   var result = 0;
+  var initDone = false;
+  late var gameStartTime;
 
   // late var updateTimer = Timer.periodic(updateInterval, (timer) { })
   @override
   void initState() {
     super.initState();
-
+    initGame();
   }
 
   void initGame() {
-    final areaWidth = MediaQuery.of(context).size.width;
-    final areaHeight = MediaQuery.of(context).size.height;
+    // final areaWidth = MediaQuery.of(context).size.width;
+    // final areaHeight = MediaQuery.of(context).size.height;
+    final areaWidth = 400;
+    final areaHeight = 400;
     var numOfBlocks = areaWidth ~/ 20;
     var centerBlockX = numOfBlocks / 2;
     var centerBlockY = centerBlockX;
     //var boarderBoxWidth = numOfBlocks * 20;
     var random = Random();
     do {
-      monsterBlockX = random.nextInt(numOfBlocks);
-      monsterBlockY = random.nextInt(numOfBlocks);
+      monsterBlockX = random.nextInt(numOfBlocks - 1);
+      monsterBlockY = random.nextInt(numOfBlocks - 1);
     } while ((monsterBlockX - centerBlockX).abs() +
             (monsterBlockY - centerBlockY).abs() <
-        30);
+        10);
     do {
       snakeBlockX = random.nextInt(numOfBlocks);
       snakeBlockY = random.nextInt(numOfBlocks);
     } while ((snakeBlockX - centerBlockX).abs() +
             (snakeBlockY - centerBlockY).abs() >
-        30);
+        10);
+    this.monsterDrift = random.nextInt(19);
   }
 
-  int checkCollision() {
-    monsterPosX = snakeSize*monsterBlockX+monster
+  List getMonsterNewPos() {
+    return [0, 0];
   }
 
-  void loop() {
-  
+  bool checkCollision() {
+    int monsterPosX = snakeSize * monsterBlockX + monsterDrift;
+    int monsterPosY = snakeSize * monsterBlockY + monsterDrift;
+    int snakePosX = snakeSize * snakeBlockX;
+    int snakePosY = snakeSize * snakeBlockY;
+    if (pow(snakePosY - monsterPosY, 2) + pow(snakePosX - monsterPosX, 2) <
+        pow(snakeSize, 2)) {
+      return true;
+    }
+    return false;
   }
 
-  void gameStartButton() {
+  bool checkPlayerWin() {
+    return false;
+  }
+
+  void handleTapGameStart() {
     // bind function to the start button
-    this.isGameOn = true;
-    this.gameLoopTimer = Timer.periodic(updateInterval, (timer) {
-       // main game loop
     setState(() {
-      print(this.isGameOn);
-
-      this.result = checkColision();
-      if (result == 1) {
-        // the player wins
-        this.gameLoopTimer.cancel();
-        this.isGameOn = false;
-      } else if (result == 2) {
-        // the player loses
-        this.gameLoopTimer.cancel();
-        this.isGameOn = false;
-      }
+      this.isGameOn = true;
+      this.gameStartTime = DateTime.now().millisecond;
     });
+
+    this.gameLoopTimer = Timer.periodic(updateInterval, (timer) {
+      // main game loop
+      setState(() {
+        print(this.isGameOn);
+        //
+        //more codes on snake moving
+        var monsterPos = getMonsterNewPos();
+        //
+        if (checkCollision()) {
+          // the player loses
+          this.gameLoopTimer.cancel();
+          this.isGameOn = false;
+          this.result = 2; // the player loses
+          initGame();
+          return;
+        }
+        if (checkPlayerWin()) {
+          // the player wins
+          this.gameLoopTimer.cancel();
+          this.isGameOn = false;
+          this.result = 1; // the player wins
+          initGame();
+          return;
+        }
+      });
     });
   }
 
@@ -108,26 +139,26 @@ class _MyHomePageState extends State<MyHomePage> {
     // update sprites in the game board.
     List<Widget> spritesList = [];
 
-    if (!this.isGameOn) {
-      // game not on. display snake, monster, food, BUTTON on the screen.
-      initGame();
-    } else {
-      // game on. display the new pos of snake, monster, food on the screen.
-      spritesList.add(
-        Positioned(
-          top: boarderBoxWidth / 2.5,
-          child: TextButton(
-            onPressed: () {
-              this.isGameOn = false;
-            },
-            child: Text(
-              "finished",
-              style: TextStyle(fontSize: 24.0, color: Colors.black87),
-            ),
-          ),
-        ),
-      );
-    }
+    // if (!this.isGameOn) {
+    //   // game not on. display snake, monster, food, BUTTON on the screen.
+    //   initGame();
+    // } else {
+    //   // game on. display the new pos of snake, monster, food on the screen.
+    //   spritesList.add(
+    //     Positioned(
+    //       top: boarderBoxWidth / 2.5,
+    //       child: TextButton(
+    //         onPressed: () {
+    //           this.isGameOn = false;
+    //         },
+    //         child: Text(
+    //           "finished",
+    //           style: TextStyle(fontSize: 24.0, color: Colors.black87),
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    // }
 
     // borderBox
     spritesList.add(
@@ -142,8 +173,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // monster
     spritesList.add(
       Positioned(
-        left: (snakeSize * monsterBlockX).toDouble(),
-        top: (snakeSize * monsterBlockY).toDouble(),
+        left: ((snakeSize * monsterBlockX) + this.monsterDrift).toDouble(),
+        top: ((snakeSize * monsterBlockY) + this.monsterDrift).toDouble(),
         child: Container(
           width: snakeSize.toDouble(),
           height: snakeSize.toDouble(),
