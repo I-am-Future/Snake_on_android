@@ -1,7 +1,12 @@
-// snake - from desktop to mobile.
+// Snake - from desktop to mobile.
 // from CSC1002 (2021 Spring) Assignment 2
+// Author: Future
+// Date: Jul.14th, 2021
+
+import 'dart:io';
 import 'dart:math';
 import 'dart:async';
+import 'package:sprintf/sprintf.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -33,19 +38,35 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var isGameOn = false;
-  final updateInterval = Duration(milliseconds: 1500);
+  final updateInterval = Duration(milliseconds: 750);
+  final int monsterSpeed = 1;
   late int monsterBlockX;
   late int monsterBlockY;
   late int monsterDrift;
   late int snakeBlockX;
   late int snakeBlockY;
+  late String snakeHeading = "Up";
   final snakeSize = 20;
+  late int snakeContactsMonster = 0;
+  bool isFirstTime = true;
   var gameLoopTimer;
   var result = 0;
   var initDone = false;
   late var gameStartTime;
+  List<int> foodPosX = [-1, -1, -1, -1, -1, -1, -1, -1, -1];
+  List<int> foodPosY = [-1, -1, -1, -1, -1, -1, -1, -1, -1];
+  List<bool> foodIsEaten = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ];
 
-  // late var updateTimer = Timer.periodic(updateInterval, (timer) { })
   @override
   void initState() {
     super.initState();
@@ -62,23 +83,59 @@ class _MyHomePageState extends State<MyHomePage> {
     var centerBlockY = centerBlockX;
     //var boarderBoxWidth = numOfBlocks * 20;
     var random = Random();
+    // set monster init position
     do {
       monsterBlockX = random.nextInt(numOfBlocks - 1);
       monsterBlockY = random.nextInt(numOfBlocks - 1);
     } while ((monsterBlockX - centerBlockX).abs() +
             (monsterBlockY - centerBlockY).abs() <
         10);
+    this.monsterDrift = random.nextInt(19);
+    // set snake init position
     do {
       snakeBlockX = random.nextInt(numOfBlocks);
       snakeBlockY = random.nextInt(numOfBlocks);
     } while ((snakeBlockX - centerBlockX).abs() +
             (snakeBlockY - centerBlockY).abs() >
         10);
-    this.monsterDrift = random.nextInt(19);
+    // set food init position
+    int foodBlockX;
+    int foodBlockY;
+    for (int i = 0; i < 9; i++) {
+      do {
+        foodBlockX = random.nextInt(numOfBlocks);
+        foodBlockY = random.nextInt(numOfBlocks);
+      } while ((this.foodPosX.contains(foodBlockX)) &&
+          (this.foodPosY.contains(foodBlockY)));
+      this.foodPosX[i] = foodBlockX;
+      this.foodPosY[i] = foodBlockY;
+      this.foodIsEaten[i] = false;
+    }
+    this.snakeContactsMonster = 0;
+    this.result = 0;
+    // print(this.foodPosX);
+    // print(this.foodPosY);
+    // print(this.foodIsEaten);
   }
 
-  List getMonsterNewPos() {
-    return [0, 0];
+  List getMonsterNewBlockPos() {
+    List newBlockPos = [monsterBlockX, monsterBlockY];
+    if ((monsterBlockX - snakeBlockX).abs() >
+        (monsterBlockY - snakeBlockY).abs()) {
+      if (monsterBlockX > snakeBlockX) {
+        newBlockPos[0] -= 1;
+      } else {
+        newBlockPos[0] += 1;
+      }
+    } else {
+      if (monsterBlockY > snakeBlockY) {
+        newBlockPos[1] -= 1;
+      } else {
+        newBlockPos[1] += 1;
+      }
+    }
+
+    return newBlockPos;
   }
 
   bool checkCollision() {
@@ -94,38 +151,54 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   bool checkPlayerWin() {
-    return false;
+    return !foodIsEaten.contains(false);
   }
+
+  void checkIfEating() {
+    for (int i = 0; i < 9; i++) {
+      if (snakeBlockX == foodPosX[i] && snakeBlockY == foodPosY[i]) {
+        foodIsEaten[i] = true;
+      }
+    }
+  }
+
+  void checkIfContact() {}
 
   void handleTapGameStart() {
     // bind function to the start button
     setState(() {
+      this.isFirstTime = false;
       this.isGameOn = true;
-      this.gameStartTime = DateTime.now().millisecond;
+      this.gameStartTime = DateTime.now();
     });
 
     this.gameLoopTimer = Timer.periodic(updateInterval, (timer) {
       // main game loop
       setState(() {
-        print(this.isGameOn);
+        //print(this.isGameOn);
         //
-        //more codes on snake moving
-        var monsterPos = getMonsterNewPos();
-        //
+        // monster movement
+        var monsterPos = getMonsterNewBlockPos();
+        this.monsterBlockX = monsterPos[0];
+        this.monsterBlockY = monsterPos[1];
+        // check if snake is eating
+        checkIfEating();
+        // check if monster contacts with the snake body
+        checkIfContact();
+        // check if monster collides snake (player loses)
         if (checkCollision()) {
-          // the player loses
           this.gameLoopTimer.cancel();
           this.isGameOn = false;
           this.result = 2; // the player loses
-          initGame();
+          //initGame();
           return;
         }
+        // check if the player wins
         if (checkPlayerWin()) {
-          // the player wins
           this.gameLoopTimer.cancel();
           this.isGameOn = false;
           this.result = 1; // the player wins
-          initGame();
+          //initGame();
           return;
         }
       });
@@ -138,27 +211,6 @@ class _MyHomePageState extends State<MyHomePage> {
     double boarderBoxWidth = (areaWidth ~/ 20) * 20;
     // update sprites in the game board.
     List<Widget> spritesList = [];
-
-    // if (!this.isGameOn) {
-    //   // game not on. display snake, monster, food, BUTTON on the screen.
-    //   initGame();
-    // } else {
-    //   // game on. display the new pos of snake, monster, food on the screen.
-    //   spritesList.add(
-    //     Positioned(
-    //       top: boarderBoxWidth / 2.5,
-    //       child: TextButton(
-    //         onPressed: () {
-    //           this.isGameOn = false;
-    //         },
-    //         child: Text(
-    //           "finished",
-    //           style: TextStyle(fontSize: 24.0, color: Colors.black87),
-    //         ),
-    //       ),
-    //     ),
-    //   );
-    // }
 
     // borderBox
     spritesList.add(
@@ -196,7 +248,19 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
-    if (!this.isGameOn) {
+    // food
+    for (int i = 0; i < 9; i++) {
+      if (!foodIsEaten[i]) {
+        spritesList.add(
+          Positioned(
+            left: (snakeSize * foodPosX[i]).toDouble(),
+            top: (snakeSize * foodPosY[i]).toDouble(),
+            child: Text(sprintf("%d", [i + 1]), style: TextStyle(fontSize: 18)),
+          ),
+        );
+      }
+    }
+    if ((!this.isGameOn) && (this.isFirstTime)) {
       // game not on. display snake, monster, food, BUTTON on the screen.
       spritesList.add(
         Positioned(
@@ -205,6 +269,55 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: handleTapGameStart,
             child: Text(
               "Tap to play!",
+              style: TextStyle(fontSize: 24.0, color: Colors.black87),
+            ),
+          ),
+        ),
+      );
+      spritesList.add(
+        Positioned(
+          top: boarderBoxWidth / 4.5,
+          child: Text(
+            "Welcome to the snake!",
+            style: TextStyle(fontSize: 24.0, color: Colors.black87),
+          ),
+        ),
+      );
+    }
+
+    if (this.result == 1) {
+      //player wins
+      spritesList.add(Positioned(
+        left: (snakeSize * snakeBlockX).toDouble(),
+        top: (snakeSize * snakeBlockY).toDouble(),
+        child: Text(
+          "You win!",
+          style: TextStyle(fontSize: 12.0, color: Colors.green[700]),
+        ),
+      ));
+    }
+    if (this.result == 2) {
+      //player loses
+      spritesList.add(Positioned(
+        left: (snakeSize * snakeBlockX).toDouble(),
+        top: (snakeSize * snakeBlockY).toDouble(),
+        child: Text(
+          "You Loser!",
+          style: TextStyle(fontSize: 12.0, color: Colors.green[700]),
+        ),
+      ));
+    }
+    if (this.result == 1 || this.result == 2) {
+      spritesList.add(
+        Positioned(
+          top: boarderBoxWidth / 2.5,
+          child: TextButton(
+            onPressed: () {
+              initGame();
+              handleTapGameStart();
+            },
+            child: Text(
+              "Tap to Replay",
               style: TextStyle(fontSize: 24.0, color: Colors.black87),
             ),
           ),
@@ -232,9 +345,18 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Container(width: 8),
-                Text("Time: 00", style: TextStyle(fontSize: 18)),
-                Text("Heading: Up", style: TextStyle(fontSize: 18)),
-                Text("Contact: 00", style: TextStyle(fontSize: 18)),
+                Text(
+                    isFirstTime
+                        ? "Time:  0 sec"
+                        : sprintf("Time: %3d sec", [
+                            DateTime.now()
+                                .difference(this.gameStartTime)
+                                .inSeconds
+                          ]),
+                    style: TextStyle(fontSize: 18)),
+                Text("Heading: $snakeHeading", style: TextStyle(fontSize: 18)),
+                Text("Contact: $snakeContactsMonster",
+                    style: TextStyle(fontSize: 18)),
                 Container(width: 8),
               ],
             ),
