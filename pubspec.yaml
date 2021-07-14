@@ -26,6 +26,11 @@ dependencies:
 
   sprintf: "^6.0.0"
 
+  tom_sensors: 
+    git:
+      url: https://github.com/fzyzcjy/tom_sensors.git
+      # path: "lib/tom_sensors.dart"
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2

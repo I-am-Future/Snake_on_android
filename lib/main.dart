@@ -144,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
     int snakePosX = snakeSize * snakeBlockX;
     int snakePosY = snakeSize * snakeBlockY;
     if (pow(snakePosY - monsterPosY, 2) + pow(snakePosX - monsterPosX, 2) <
-        pow(snakeSize, 2)) {
+        pow(1.3 * snakeSize, 2)) {
       return true;
     }
     return false;
