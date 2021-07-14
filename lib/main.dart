@@ -114,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initGame() {
     // final areaWidth = MediaQuery.of(context).size.width;
     // final areaHeight = MediaQuery.of(context).size.height;
-    final areaWidth = 400;
+    final areaWidth = 380;
     // final areaHeight = 400;
     var numOfBlocks = areaWidth ~/ 20;
     this.numOfBlocks = numOfBlocks;
@@ -369,22 +369,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // update sprites in the game board.
     List<Widget> spritesList = [];
 
-    // monster
-    spritesList.add(
-      Positioned(
-        left: ((snakeSize * monsterBlockX) + this.monsterDrift).toDouble(),
-        top: ((snakeSize * monsterBlockY) + this.monsterDrift).toDouble(),
-        child: Container(
-          width: snakeSize.toDouble(),
-          height: snakeSize.toDouble(),
-          decoration: BoxDecoration(
-            color: Colors.purple[500],
-            borderRadius: BorderRadius.all(Radius.circular(2)),
-          ),
-        ),
-      ),
-    );
-
     // snake
     for (int i = 0; i < this.snakeBodyBlockX.length; i++) {
       spritesList.add(
@@ -411,6 +395,21 @@ class _MyHomePageState extends State<MyHomePage> {
           height: snakeSize.toDouble(),
           decoration: BoxDecoration(
             color: Colors.red[300],
+            borderRadius: BorderRadius.all(Radius.circular(2)),
+          ),
+        ),
+      ),
+    );
+    // monster
+    spritesList.add(
+      Positioned(
+        left: ((snakeSize * monsterBlockX) + this.monsterDrift).toDouble(),
+        top: ((snakeSize * monsterBlockY) + this.monsterDrift).toDouble(),
+        child: Container(
+          width: snakeSize.toDouble(),
+          height: snakeSize.toDouble(),
+          decoration: BoxDecoration(
+            color: Colors.purple[500],
             borderRadius: BorderRadius.all(Radius.circular(2)),
           ),
         ),
