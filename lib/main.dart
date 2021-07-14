@@ -42,9 +42,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late var numOfBlocks;
-  final monsterUpdateInterval = Duration(milliseconds: 800);
-  final snakeNormalInterval = Duration(milliseconds: 500);
-  final snakeEatingInterval = Duration(milliseconds: 750);
+  var monsterUpdateInterval = Duration(milliseconds: 700);
+  var snakeNormalInterval = Duration(milliseconds: 500);
+  var snakeEatingInterval = Duration(milliseconds: 750);
+  final slowModeInterval = [1500, 1300, 1550];
+  final mediumModeInterval = [700, 500, 750];
+  final fastModeInterval = [250, 200, 300];
   final int monsterSpeed = 1;
   late int monsterBlockX;
   late int monsterBlockY;
@@ -92,14 +95,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void _toggle() {
     setState(() {
       if (_subscriptions == null) {
-        print('do subscribe');
+        //print('do subscribe');
         _subscriptions = [
           rotationEvents.listen((e) {
             setState(() => _rotationEvent = e);
           }),
         ];
       } else {
-        print('do unsubscribe');
+        //print('do unsubscribe');
         for (final sub in _subscriptions!) {
           sub.cancel();
         }
@@ -318,9 +321,9 @@ class _MyHomePageState extends State<MyHomePage> {
           this.snakeBodyBlockX.removeAt(0);
           this.snakeBodyBlockY.removeAt(0);
         }
-        print("snake length:");
-        print(this.snakeCurrentLength);
-        print(this.snakeMaxLength);
+        // print("snake length:");
+        // print(this.snakeCurrentLength);
+        // print(this.snakeMaxLength);
       }
       //
       // check if snake is eating
@@ -366,17 +369,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // update sprites in the game board.
     List<Widget> spritesList = [];
 
-    // borderBox
-    spritesList.add(
-      Positioned(
-        child: Container(
-          width: boarderBoxWidth,
-          height: boarderBoxWidth,
-          color: Colors.blue[50],
-        ),
-      ),
-    );
-
     // monster
     spritesList.add(
       Positioned(
@@ -385,7 +377,10 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Container(
           width: snakeSize.toDouble(),
           height: snakeSize.toDouble(),
-          color: Colors.purple[500],
+          decoration: BoxDecoration(
+            color: Colors.purple[500],
+            borderRadius: BorderRadius.all(Radius.circular(2)),
+          ),
         ),
       ),
     );
@@ -399,7 +394,10 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Container(
             width: snakeSize.toDouble(),
             height: snakeSize.toDouble(),
-            color: Colors.blue[300],
+            decoration: BoxDecoration(
+              color: Colors.blue[200],
+              borderRadius: BorderRadius.all(Radius.circular(2)),
+            ),
           ),
         ),
       );
@@ -411,7 +409,10 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Container(
           width: snakeSize.toDouble(),
           height: snakeSize.toDouble(),
-          color: Colors.red[300],
+          decoration: BoxDecoration(
+            color: Colors.red[300],
+            borderRadius: BorderRadius.all(Radius.circular(2)),
+          ),
         ),
       ),
     );
@@ -428,6 +429,20 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }
     }
+    // borderBox
+    spritesList.add(
+      Positioned(
+        child: Container(
+          width: boarderBoxWidth,
+          height: boarderBoxWidth,
+          margin: const EdgeInsets.all(0.0),
+          padding: const EdgeInsets.all(10.0),
+          decoration: BoxDecoration(border: Border.all(color: Colors.black)),
+          //color: Colors.blue[50],
+        ),
+      ),
+    );
+
     if (this.isFirstTime) {
       // game not on. display snake, monster, food, BUTTON on the screen.
       spritesList.add(
@@ -457,26 +472,27 @@ class _MyHomePageState extends State<MyHomePage> {
     if (this.result == 1) {
       //player wins
       spritesList.add(Positioned(
-        left: (snakeSize * snakeBlockX).toDouble(),
+        left: monsterBlockX > this.numOfBlocks / 2
+            ? (snakeSize * snakeBlockX).toDouble() - 100
+            : (snakeSize * snakeBlockX).toDouble(),
         top: (snakeSize * snakeBlockY).toDouble(),
         child: Text(
           "You win!",
           style: TextStyle(fontSize: 24.0, color: Colors.red[900]),
-          textAlign: monsterBlockX > this.numOfBlocks
-              ? TextAlign.right
-              : TextAlign.left,
         ),
       ));
     }
     if (this.result == 2) {
       //player loses
       spritesList.add(Positioned(
-        left: (snakeSize * snakeBlockX).toDouble(),
+        left: monsterBlockX > this.numOfBlocks / 2
+            ? (snakeSize * snakeBlockX).toDouble() - 100
+            : (snakeSize * snakeBlockX).toDouble(),
         top: (snakeSize * snakeBlockY).toDouble(),
         child: Text(
           "You Lose!",
-          style: TextStyle(fontSize: 24.0, color: Colors.green[600]),
-          textAlign: monsterBlockX > this.numOfBlocks
+          style: TextStyle(fontSize: 24.0, color: Colors.green[700]),
+          textAlign: monsterBlockX > this.numOfBlocks / 2
               ? TextAlign.right
               : TextAlign.left,
         ),
@@ -509,12 +525,51 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         // at the top of the app
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton(
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(child: Text("slow"), value: "slow"),
+                PopupMenuItem(child: Text("medium"), value: "medium"),
+                PopupMenuItem(child: Text("fast"), value: "fast"),
+              ];
+            },
+            onSelected: (Object object) {
+              if (object == 'slow') {
+                this.monsterUpdateInterval =
+                    Duration(milliseconds: this.slowModeInterval[0]);
+                this.snakeNormalInterval =
+                    Duration(milliseconds: this.slowModeInterval[1]);
+                this.snakeEatingInterval =
+                    Duration(milliseconds: this.slowModeInterval[2]);
+              } else if (object == 'medium') {
+                this.monsterUpdateInterval =
+                    Duration(milliseconds: this.mediumModeInterval[0]);
+                this.snakeNormalInterval =
+                    Duration(milliseconds: this.mediumModeInterval[1]);
+                this.snakeEatingInterval =
+                    Duration(milliseconds: this.mediumModeInterval[2]);
+              } else if (object == 'fast') {
+                this.monsterUpdateInterval =
+                    Duration(milliseconds: this.fastModeInterval[0]);
+                this.snakeNormalInterval =
+                    Duration(milliseconds: this.fastModeInterval[1]);
+                this.snakeEatingInterval =
+                    Duration(milliseconds: this.fastModeInterval[2]);
+              }
+            },
+          )
+        ],
       ),
       body: Column(
         children: [
           Container(
             alignment: Alignment.center,
+            margin: const EdgeInsets.all(5.0),
+            padding: const EdgeInsets.all(3.0),
+            decoration: BoxDecoration(border: Border.all(color: Colors.black)),
             height: 48,
+            //width: ,
             child: Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
