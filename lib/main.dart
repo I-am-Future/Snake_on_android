@@ -41,36 +41,43 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // out-game config
   late var numOfBlocks;
-  var monsterUpdateInterval = Duration(milliseconds: 700);
-  var snakeNormalInterval = Duration(milliseconds: 500);
-  var snakeEatingInterval = Duration(milliseconds: 750);
   final slowModeInterval = [1500, 1300, 1550];
   final mediumModeInterval = [700, 500, 750];
   final fastModeInterval = [250, 200, 300];
+  Map intHeadingMapping = {0: "up", 1: "right", 2: "down", 3: "left"};
+  List<StreamSubscription>? _subscriptions;
+  RotationEvent? _rotationEvent;
+  final snakeSize = 20;
+  bool isFirstTime = true;
+
+  // monsters
+  var monsterUpdateInterval = Duration(milliseconds: 700);
   final int monsterSpeed = 1;
   late int monsterBlockX;
   late int monsterBlockY;
   late int monsterDrift;
+
+  // snake
+  var snakeNormalInterval = Duration(milliseconds: 500);
+  var snakeEatingInterval = Duration(milliseconds: 750);
   late int snakeBlockX;
   late int snakeBlockY;
   late int snakeCurrentLength;
   late int snakeMaxLength;
   List<int> snakeBodyBlockX = [];
   List<int> snakeBodyBlockY = [];
-
   late int snakeHeading = 0;
-  Map intHeadingMapping = {0: "up", 1: "right", 2: "down", 3: "left"};
-  final snakeSize = 20;
+
+  // in-game config
   late int snakeContactsMonster = 0;
-  bool isFirstTime = true;
   var gameLoopTimer;
   var result = 0;
-  var initDone = false;
   late var gameStartTime;
   late var gameCurrentTime;
-  List<StreamSubscription>? _subscriptions;
-  RotationEvent? _rotationEvent;
+
+  // food
   List<int> foodPosX = [-1, -1, -1, -1, -1, -1, -1, -1, -1];
   List<int> foodPosY = [-1, -1, -1, -1, -1, -1, -1, -1, -1];
   List<bool> foodIsEaten = [
@@ -120,7 +127,6 @@ class _MyHomePageState extends State<MyHomePage> {
     this.numOfBlocks = numOfBlocks;
     var centerBlockX = numOfBlocks / 2;
     var centerBlockY = centerBlockX;
-    //var boarderBoxWidth = numOfBlocks * 20;
     var random = Random();
     // set monster init position
     do {
@@ -157,9 +163,6 @@ class _MyHomePageState extends State<MyHomePage> {
     this.snakeBodyBlockY = [];
 
     this.result = 0;
-    // print(this.foodPosX);
-    // print(this.foodPosY);
-    // print(this.foodIsEaten);
   }
 
   List getMonsterNewBlockPos() {
@@ -168,10 +171,6 @@ class _MyHomePageState extends State<MyHomePage> {
     int monsterPosY = snakeSize * monsterBlockY + monsterDrift;
     int snakePosX = snakeSize * snakeBlockX;
     int snakePosY = snakeSize * snakeBlockY;
-    // print(monsterPosX);
-    // print(monsterPosY);
-    // print(snakePosX);
-    // print(snakePosY);
     if ((monsterPosX - snakePosX).abs() > (monsterPosY - snakePosY).abs()) {
       if (monsterPosX > snakePosX) {
         newBlockPos[0] -= 1;
@@ -191,10 +190,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int getSnakeHeading() {
     int newHdg;
-    // rotationEvents!=null?rotationEvents.pitch:null
-    // print(_rotationEvent?.pitch);
-    // print(_rotationEvent?.roll);
-
     double? pitchAngle = _rotationEvent?.pitch;
     double? rollAngle = _rotationEvent?.roll;
     if (pitchAngle!.abs() > rollAngle!.abs()) {
@@ -207,7 +202,6 @@ class _MyHomePageState extends State<MyHomePage> {
         if (this.snakeHeading == 0) {
           return 0;
         }
-
         newHdg = 2;
       }
     } else {
@@ -215,17 +209,14 @@ class _MyHomePageState extends State<MyHomePage> {
         if (this.snakeHeading == 3) {
           return 3;
         }
-
         newHdg = 1;
       } else {
         if (this.snakeHeading == 1) {
           return 1;
         }
-
         newHdg = 3;
       }
     }
-    // print(newHdg);
     return newHdg;
   }
 
@@ -281,11 +272,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void updateSnake() {
     setState(() {
-      //print(this.isGameOn);
-      //
       // get the snake heading
       this.snakeHeading = getSnakeHeading();
-      //
       // move the snake
       var timerDuration;
       if ((snakeBlockX == 0 && this.snakeHeading == 3) ||
@@ -321,9 +309,6 @@ class _MyHomePageState extends State<MyHomePage> {
           this.snakeBodyBlockX.removeAt(0);
           this.snakeBodyBlockY.removeAt(0);
         }
-        // print("snake length:");
-        // print(this.snakeCurrentLength);
-        // print(this.snakeMaxLength);
       }
       //
       // check if snake is eating
@@ -331,13 +316,11 @@ class _MyHomePageState extends State<MyHomePage> {
       // check if monster collides snake (player loses)
       if (checkCollision()) {
         this.result = 2; // the player loses
-        //initGame();
         return;
       }
       // check if the player wins
       if (checkPlayerWin()) {
         this.result = 1; // the player wins
-        //initGame();
         return;
       }
       Timer(timerDuration, updateSnake);
@@ -437,7 +420,6 @@ class _MyHomePageState extends State<MyHomePage> {
           margin: const EdgeInsets.all(0.0),
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(border: Border.all(color: Colors.black)),
-          //color: Colors.blue[50],
         ),
       ),
     );
