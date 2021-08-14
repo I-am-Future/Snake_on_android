@@ -5,16 +5,24 @@ It is based on Assignment2, CSC1002, 2021.
 
 # basic instructions
 a) touch the screen to start.
+
 b) monster(purple one) will chase the snake head(red one), if they meet, the player loses.
+
 c) it is OK if the monster contact with the snake body. But the "contact" label on the screen with increase by one.
+
 d) snake head eats numbers and extend corresponding length of body.
+
 e) when all the numbers are eaten, the player wins.
 
 # tips
 a) in the normal situation, the snake moves a little faster than the monster.
+
 b) whtn the snake is extending, the snake moves a little slower than the monster.
+
 c) righttop button can adjust the speed-slow, medium, and fast.
-d) hope you could enjoy! A release .apk is in the "release" and is avaliable for all android devices!
+
+d) hope you could enjoy! A release .apk for all android devices will be uploaded later!
+
 
 ## Getting Started
 
