@@ -1,6 +1,6 @@
 {
     "name": "snake",
-    "short_name": "snake",
+    "short_name": "snake", 
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
