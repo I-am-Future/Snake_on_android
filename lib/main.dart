@@ -44,13 +44,14 @@ class _MyHomePageState extends State<MyHomePage> {
   // out-game config
   late var numOfBlocks;
   final slowModeInterval = [1500, 1300, 1550];
-  final mediumModeInterval = [700, 500, 750];
-  final fastModeInterval = [250, 200, 300];
+  final mediumModeInterval = [700, 450, 750];
+  final fastModeInterval = [300, 200, 300];
+  final snakeSize = 20;
   Map intHeadingMapping = {0: "up", 1: "right", 2: "down", 3: "left"};
   List<StreamSubscription>? _subscriptions;
   RotationEvent? _rotationEvent;
-  final snakeSize = 20;
   bool isFirstTime = true;
+  var beforeFirstFrame = true;
 
   // monsters
   var monsterUpdateInterval = Duration(milliseconds: 700);
@@ -62,20 +63,20 @@ class _MyHomePageState extends State<MyHomePage> {
   // snake
   var snakeNormalInterval = Duration(milliseconds: 500);
   var snakeEatingInterval = Duration(milliseconds: 750);
-  late int snakeBlockX;
-  late int snakeBlockY;
+  late int snakeHeadBlockX;
+  late int snakeHeadBlockY;
   late int snakeCurrentLength;
   late int snakeMaxLength;
+  late int snakeHeading = 0;
   List<int> snakeBodyBlockX = [];
   List<int> snakeBodyBlockY = [];
-  late int snakeHeading = 0;
 
   // in-game config
   late int snakeContactsMonster = 0;
-  var gameLoopTimer;
-  var result = 0;
   late var gameStartTime;
   late var gameCurrentTime;
+  var gameLoopTimer;
+  var result = 0;
 
   // food
   List<int> foodPosX = [-1, -1, -1, -1, -1, -1, -1, -1, -1];
@@ -95,8 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    initGame();
-    _toggle();
+    Timer(Duration(milliseconds: 100), () {
+      this.beforeFirstFrame = false;
+      initGame();
+      _toggle();
+    });
   }
 
   void _toggle() {
@@ -119,9 +123,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void initGame() {
-    // final areaWidth = MediaQuery.of(context).size.width;
+    final areaWidth = MediaQuery.of(context).size.width;
     // final areaHeight = MediaQuery.of(context).size.height;
-    final areaWidth = 380;
+    //final areaWidth = 380;
     // final areaHeight = 400;
     var numOfBlocks = areaWidth ~/ 20;
     this.numOfBlocks = numOfBlocks;
@@ -138,10 +142,10 @@ class _MyHomePageState extends State<MyHomePage> {
     this.monsterDrift = random.nextInt(19);
     // set snake init position
     do {
-      snakeBlockX = random.nextInt(numOfBlocks);
-      snakeBlockY = random.nextInt(numOfBlocks);
-    } while ((snakeBlockX - centerBlockX).abs() +
-            (snakeBlockY - centerBlockY).abs() >
+      snakeHeadBlockX = random.nextInt(numOfBlocks);
+      snakeHeadBlockY = random.nextInt(numOfBlocks);
+    } while ((snakeHeadBlockX - centerBlockX).abs() +
+            (snakeHeadBlockY - centerBlockY).abs() >
         10);
     // set food init position
     int foodBlockX;
@@ -169,8 +173,8 @@ class _MyHomePageState extends State<MyHomePage> {
     List newBlockPos = [monsterBlockX, monsterBlockY];
     int monsterPosX = snakeSize * monsterBlockX + monsterDrift;
     int monsterPosY = snakeSize * monsterBlockY + monsterDrift;
-    int snakePosX = snakeSize * snakeBlockX;
-    int snakePosY = snakeSize * snakeBlockY;
+    int snakePosX = snakeSize * snakeHeadBlockX;
+    int snakePosY = snakeSize * snakeHeadBlockY;
     if ((monsterPosX - snakePosX).abs() > (monsterPosY - snakePosY).abs()) {
       if (monsterPosX > snakePosX) {
         newBlockPos[0] -= 1;
@@ -223,10 +227,10 @@ class _MyHomePageState extends State<MyHomePage> {
   bool checkCollision() {
     int monsterPosX = snakeSize * monsterBlockX + monsterDrift;
     int monsterPosY = snakeSize * monsterBlockY + monsterDrift;
-    int snakePosX = snakeSize * snakeBlockX;
-    int snakePosY = snakeSize * snakeBlockY;
+    int snakePosX = snakeSize * snakeHeadBlockX;
+    int snakePosY = snakeSize * snakeHeadBlockY;
     if (pow(snakePosY - monsterPosY, 2) + pow(snakePosX - monsterPosX, 2) <
-        pow(snakeSize, 2)) {
+        pow(1 * snakeSize, 2)) {
       return true;
     }
     return false;
@@ -238,7 +242,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void checkIfEating() {
     for (int i = 0; i < 9; i++) {
-      if (snakeBlockX == foodPosX[i] && snakeBlockY == foodPosY[i]) {
+      if (snakeHeadBlockX == foodPosX[i] && snakeHeadBlockY == foodPosY[i]) {
         foodIsEaten[i] = true;
         this.snakeMaxLength += i + 1;
       }
@@ -264,6 +268,11 @@ class _MyHomePageState extends State<MyHomePage> {
         this.monsterBlockY = monsterPos[1];
         // check if monster contacts with the snake body
         checkIfContact();
+        if (checkCollision()) {
+          this.result = 2; // the player loses
+          return;
+        }
+
         this.gameCurrentTime = DateTime.now();
         Timer(monsterUpdateInterval, updateMonster);
       }
@@ -272,14 +281,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void updateSnake() {
     setState(() {
+      if (this.result == 2) {
+        return;
+      }
       // get the snake heading
       this.snakeHeading = getSnakeHeading();
       // move the snake
       var timerDuration;
-      if ((snakeBlockX == 0 && this.snakeHeading == 3) ||
-          (snakeBlockY == 0 && this.snakeHeading == 0) ||
-          (snakeBlockX == this.numOfBlocks - 1 && this.snakeHeading == 1) ||
-          (snakeBlockY == this.numOfBlocks - 1 && this.snakeHeading == 2)) {
+      if ((snakeHeadBlockX == 0 && this.snakeHeading == 3) ||
+          (snakeHeadBlockY == 0 && this.snakeHeading == 0) ||
+          (snakeHeadBlockX == this.numOfBlocks - 1 && this.snakeHeading == 1) ||
+          (snakeHeadBlockY == this.numOfBlocks - 1 && this.snakeHeading == 2)) {
         // the snake stops
         // set next timer
         if (snakeBodyBlockX.length < this.snakeMaxLength) {
@@ -289,16 +301,16 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       } else {
         // the snake moves
-        this.snakeBodyBlockX.add(snakeBlockX);
-        this.snakeBodyBlockY.add(snakeBlockY);
+        this.snakeBodyBlockX.add(snakeHeadBlockX);
+        this.snakeBodyBlockY.add(snakeHeadBlockY);
         if (this.snakeHeading == 0) {
-          snakeBlockY -= 1;
+          snakeHeadBlockY -= 1;
         } else if (this.snakeHeading == 1) {
-          snakeBlockX += 1;
+          snakeHeadBlockX += 1;
         } else if (this.snakeHeading == 2) {
-          snakeBlockY += 1;
+          snakeHeadBlockY += 1;
         } else {
-          snakeBlockX -= 1;
+          snakeHeadBlockX -= 1;
         }
         if (snakeBodyBlockX.length < this.snakeMaxLength) {
           // snake should extending
@@ -351,7 +363,7 @@ class _MyHomePageState extends State<MyHomePage> {
     double boarderBoxWidth = (areaWidth ~/ 20) * 20;
     // update sprites in the game board.
     List<Widget> spritesList = [];
-
+    print(this.numOfBlocks);
     // snake
     for (int i = 0; i < this.snakeBodyBlockX.length; i++) {
       spritesList.add(
@@ -371,8 +383,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     spritesList.add(
       Positioned(
-        left: (snakeSize * snakeBlockX).toDouble(),
-        top: (snakeSize * snakeBlockY).toDouble(),
+        left: (snakeSize * snakeHeadBlockX).toDouble(),
+        top: (snakeSize * snakeHeadBlockY).toDouble(),
         child: Container(
           width: snakeSize.toDouble(),
           height: snakeSize.toDouble(),
@@ -435,6 +447,9 @@ class _MyHomePageState extends State<MyHomePage> {
               "Tap to play!",
               style: TextStyle(fontSize: 24.0, color: Colors.black87),
             ),
+            style: ButtonStyle(
+                side: MaterialStateProperty.all(
+                    BorderSide(color: Colors.grey, width: 1))),
           ),
         ),
       );
@@ -454,9 +469,9 @@ class _MyHomePageState extends State<MyHomePage> {
       //player wins
       spritesList.add(Positioned(
         left: monsterBlockX > this.numOfBlocks / 2
-            ? (snakeSize * snakeBlockX).toDouble() - 100
-            : (snakeSize * snakeBlockX).toDouble(),
-        top: (snakeSize * snakeBlockY).toDouble(),
+            ? (snakeSize * snakeHeadBlockX).toDouble() - 100
+            : (snakeSize * snakeHeadBlockX).toDouble(),
+        top: (snakeSize * snakeHeadBlockY).toDouble(),
         child: Text(
           "You win!",
           style: TextStyle(fontSize: 24.0, color: Colors.red[900]),
@@ -467,9 +482,9 @@ class _MyHomePageState extends State<MyHomePage> {
       //player loses
       spritesList.add(Positioned(
         left: monsterBlockX > this.numOfBlocks / 2
-            ? (snakeSize * snakeBlockX).toDouble() - 100
-            : (snakeSize * snakeBlockX).toDouble(),
-        top: (snakeSize * snakeBlockY).toDouble(),
+            ? (snakeSize * snakeHeadBlockX).toDouble() - 100
+            : (snakeSize * snakeHeadBlockX).toDouble(),
+        top: (snakeSize * snakeHeadBlockY).toDouble(),
         child: Text(
           "You Lose!",
           style: TextStyle(fontSize: 24.0, color: Colors.green[700]),
@@ -489,9 +504,12 @@ class _MyHomePageState extends State<MyHomePage> {
               handleTapGameStart();
             },
             child: Text(
-              "Tap to Replay",
+              "Tap to replay",
               style: TextStyle(fontSize: 24.0, color: Colors.black87),
             ),
+            style: ButtonStyle(
+                side: MaterialStateProperty.all(
+                    BorderSide(color: Colors.grey, width: 1))),
           ),
         ),
       );
@@ -579,7 +597,9 @@ class _MyHomePageState extends State<MyHomePage> {
           Expanded(
             child: Stack(
               alignment: Alignment.topCenter,
-              children: buildAllSprites(),
+              children: this.beforeFirstFrame
+                  ? [Text("performing initialization")]
+                  : buildAllSprites(),
             ),
           ),
         ],
