@@ -21,7 +21,7 @@ b) whtn the snake is extending, the snake moves a little slower than the monster
 
 c) righttop button can adjust the speed-slow, medium, and fast.
 
-d) hope you could enjoy! A release .apk for all android devices will be uploaded later!
+d) hope you can enjoy! A release .apk for all android devices is at Snake.zip in the homepage!
 
 
 ## Getting Started
